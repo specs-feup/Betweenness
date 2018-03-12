@@ -9,6 +9,7 @@
 #include <chrono>
 #include <cfloat>
 #include <cstring>
+#include <mpi.h>
 #include <fstream>
 #include <iostream>
 #include <iomanip>
@@ -23,7 +24,12 @@ WeightedDirectedGraph * ReadGraph(string fileName, std::vector<int> * verticesNe
 
 int main(int argc, char* argv[])
 {
+	MPI_Init(&argc, &argv);
+
 	string file = "graph.csv";
+	int threads = 1;	//omp_get_max_threads();
+	int version = 0;	//0=serial, 1=openmp, other=mpi
+	int chunkSize = 100;
 	int startVertex = 0;
 	int endVertex = 0;
 
@@ -43,7 +49,11 @@ int main(int argc, char* argv[])
 				exit(0);
 			}
 
-			if (argument == "-f")//file path with graph
+			if (argument == "-v")//version
+			{
+				version = atoi(argv[i + 1]);
+			}
+			else if (argument == "-f")//file path with graph
 			{
 				file = argv[i + 1];
 			}
@@ -55,15 +65,27 @@ int main(int argc, char* argv[])
 			{
 				endVertex = atoi(argv[i + 1]);
 			}
+			else if (argument == "-ch")//chunk size
+			{
+				chunkSize = atoi(argv[i + 1]);
+			}
+			else if (argument == "-t")//number of used threads
+			{
+				threads = atoi(argv[i + 1]);
+			}
 			i++;
 		}
 	}
+
+	int rank;
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
 	std::vector<int> * verticesNewToOld = new std::vector<int>();
 	std::vector<int> * edgesNewToOld = new std::vector<int>();
 
 	WeightedDirectedGraph *graph = ReadGraph(file, verticesNewToOld, edgesNewToOld);//if alpha and beta string is "" then default alpha and beta values are used (1, 1, ...)
 	graph->NormalizeWeights();
+
 
 	if (startVertex < 0 || startVertex > graph->GetVertices())
 	{
@@ -78,20 +100,35 @@ int main(int argc, char* argv[])
 	Betweenness *bb = new Betweenness(*graph);
 	auto start_time = chrono::high_resolution_clock::now();
 
-	BetweennessResult result = bb->Calculate(startVertex, endVertex);
+	BetweennessResult result;
+	if (version == 0)
+	{
+		result = bb->Calculate(startVertex, endVertex);
+	}
+	else if (version == 1)
+	{
+		result = bb->CalculateOpenMP(startVertex, endVertex, threads);
+	}
+	else
+	{
+		result = bb->CalculateMpi(startVertex, endVertex, threads, chunkSize);
+	}
 
 	auto end_time = chrono::high_resolution_clock::now();
 	auto time = end_time - start_time;
 	cout << "Betweenness took " <<
 		chrono::duration_cast<chrono::milliseconds>(time).count() << " ms to run.\n";
 
-	double *betweenness = result.VertexBetweenness;
-	double *edgeBetweenness = result.EdgeBetweenness;
-	WriteResult(betweenness, edgeBetweenness, graph, file, verticesNewToOld, edgesNewToOld);
-	cout << "Results written ..." << endl;
+	if (rank == 0)
+	{
+		double *betweenness = result.VertexBetweenness;
+		double *edgeBetweenness = result.EdgeBetweenness;
+		WriteResult(betweenness, edgeBetweenness, graph, file, verticesNewToOld, edgesNewToOld);
+		cout << "Results written ..." << endl;
 
-	delete[] betweenness;
-	delete[] edgeBetweenness;
+		delete[] betweenness;
+		delete[] edgeBetweenness;
+	}
 
 	delete verticesNewToOld;
 	delete edgesNewToOld;
@@ -99,6 +136,7 @@ int main(int argc, char* argv[])
 	delete graph;
 	delete bb;
 
+	MPI_Finalize();
 	return 0;
 }
 
@@ -106,12 +144,16 @@ void PrintUsage()
 {
 	cout << endl;
 	cout << "Help for betweenness algorithm parameters" << endl;
-	cout << "Usage: ./betweenness.exe -f <file> -s <start> -e <end>" << endl;
+	cout << "Usage: ./betweenness.exe -f <file> -v <version> -w <weight> -s <start> -e <end> -ch <chunk> -t <threads>" << endl;
+	cout << "Usage: mpirun -n 24 ./betweenness.exe -f <file> -v <version> -w <weight> -s <start> -e <end> -ch <chunk> -t <threads>" << endl;
 
 	cout << "Where:" << endl;
 	cout << " <file>: \tFile with graph in .csv format" << endl;
+	cout << " <version>: \t0 is serial[default], 1 is OpenMP version, 2 is MPI" << endl;
 	cout << " <start>: \tFrom which vertex id calculate betweenness [default=0]" << endl;
 	cout << " <end>: \tTo which vertex id calculate [default=last vertex of graph]" << endl;
+	cout << " <chunk>: \tSize of work for mpi slave processes (number of vertices)" << endl;
+	cout << " <threads>: \tUsed threads by parallel version or each slave process" << endl;
 	cout << endl;
 }
 

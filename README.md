@@ -19,7 +19,7 @@ unzip Graphs/experiment_graphs.zip -d Graphs/
 2. Run betweenness centrality algorithm
 ```
 cd Code/build/
-./betweenness -f ../../Graphs/graph-cze-brno.csv
+mpirun -n 24 ./betweenness -f ../../Graphs/graph-cze-brno.csv -v 2 -t 1
 ```
 
 ## Experiments
@@ -42,6 +42,12 @@ graph-prt-port_preprocessed.csv    | 112679 | 80.5
 
 
 2. Our parallel version on 10 nodes = 240 processes and 1 thread per process
+```
+qsub -q qexp -l select=10 -I
+module load intel/2017.00
+cd Code/build/
+mpirun -n 240 ./betweenness -f ../../Graphs/BetweennessInputs/graph-cze-brno_preprocessed.csv -v 2 -t 1
+```
 
 File | Vertices | Time[s]
 ------------- |-------------|-------------
