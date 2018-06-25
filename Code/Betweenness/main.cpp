@@ -103,28 +103,36 @@ int main(int argc, char* argv[])
 	BetweennessResult result;
 	if (version == 0)
 	{
+		cout << "Betweenness started " << endl;
 		result = bb->Calculate(startVertex, endVertex);
 	}
 	else if (version == 1)
 	{
+		cout << "Betweenness started " << endl;
 		result = bb->CalculateOpenMP(startVertex, endVertex, threads);
 	}
 	else
 	{
+		if (rank == 0) cout << "Betweenness started " << endl;
 		result = bb->CalculateMpi(startVertex, endVertex, threads, chunkSize);
 	}
 
-	auto end_time = chrono::high_resolution_clock::now();
-	auto time = end_time - start_time;
-	cout << "Betweenness took " <<
-		chrono::duration_cast<chrono::milliseconds>(time).count() << " ms to run.\n";
+	if (version == 0 
+		|| version == 1 
+		|| rank == 0)
+	{
+		auto end_time = chrono::high_resolution_clock::now();
+		auto time = end_time - start_time;
+		cout << "Input graph contained: " << graph->GetVertices() << " vertices and " << graph->GetEdges() << " edges." << endl;
+		cout << "Betweenness took " <<
+			chrono::duration_cast<chrono::milliseconds>(time).count() << " ms to run.\n";
+	}
 
 	if (rank == 0)
 	{
 		double *betweenness = result.VertexBetweenness;
 		double *edgeBetweenness = result.EdgeBetweenness;
 		WriteResult(betweenness, edgeBetweenness, graph, file, verticesNewToOld, edgesNewToOld);
-		cout << "Results written ..." << endl;
 
 		delete[] betweenness;
 		delete[] edgeBetweenness;
@@ -208,7 +216,7 @@ WeightedDirectedGraph * ReadGraph(string fileName, std::vector<int> * verticesNe
 		iss >> reader;
 		int v = stoi(reader[0]);
 		int w = stoi(reader[1]);
-		int weight = stoi(reader[2]);
+		int weight = stod(reader[2]);
 		int edgeId = stoi(reader[3]);
 
 		int newV, newW;
