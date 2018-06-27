@@ -50,7 +50,7 @@ graph-prt-port.csv    | 7316   | 14793  | 17.70
 qsub -q qexp -l select=10 -I
 module load intel/2017.00
 cd Code/build/
-mpirun -n 240 ./betweenness -f ../../Graphs/BetweennessInputs/graph-cze-brno_preprocessed.csv -v 2 -t 1
+mpirun -n 240 ./betweenness -f ../../Graphs/BetweennessInputs/graph-cze-brno.csv -v 2 -t 1
 ```
 
 File | Vertices | Edges | Time[s]
