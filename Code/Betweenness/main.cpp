@@ -20,7 +20,7 @@
 void PrintUsage();
 void WriteResult(double * bw, double * ebw, WeightedDirectedGraph * graph, string filename, std::vector<int> * verticesNewToOld, std::vector<int> * edgesNewToOld);
 WeightedDirectedGraph * ReadGraph(string fileName, std::vector<int> * verticesNewToOld, std::vector<int> * edgesNewToOld);
-
+void PrintParameters(int version, string file, int startVertex, int endVertex, int chunkSize, int threads, int processes);
 
 int main(int argc, char* argv[])
 {
@@ -78,12 +78,14 @@ int main(int argc, char* argv[])
 	}
 
 	int rank;
+	int size;
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	MPI_Comm_size(MPI_COMM_WORLD, &size);
 
 	std::vector<int> * verticesNewToOld = new std::vector<int>();
 	std::vector<int> * edgesNewToOld = new std::vector<int>();
 
-	WeightedDirectedGraph *graph = ReadGraph(file, verticesNewToOld, edgesNewToOld);//if alpha and beta string is "" then default alpha and beta values are used (1, 1, ...)
+	WeightedDirectedGraph *graph = ReadGraph(file, verticesNewToOld, edgesNewToOld);
 	graph->NormalizeWeights();
 
 
@@ -101,6 +103,8 @@ int main(int argc, char* argv[])
 	auto start_time = chrono::high_resolution_clock::now();
 
 	BetweennessResult result;
+	if(rank == 0) PrintParameters(version, file, startVertex, endVertex, chunkSize, threads, size);
+	
 	if (version == 0)
 	{
 		cout << "Betweenness started " << endl;
@@ -146,6 +150,18 @@ int main(int argc, char* argv[])
 
 	MPI_Finalize();
 	return 0;
+}
+
+void PrintParameters(int version, string file, int startVertex, int endVertex, int chunkSize, int threads, int processes)
+{
+	cout << "Betweenness parameters:" << endl;
+	cout << "-version: " << version << endl;
+	cout << "-file: " << file << endl;
+	cout << "-startVertex: " << startVertex << endl;
+	cout << "-endVertex: " << endVertex << endl;
+	if(version == 1 || version == 2) cout << "-threads: " << threads << endl;
+	if(version == 2) cout << "-chunkSize: " << chunkSize << endl << "-processes: " << processes << endl;
+	cout << endl;
 }
 
 void PrintUsage()
