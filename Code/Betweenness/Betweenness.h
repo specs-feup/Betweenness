@@ -21,6 +21,7 @@ class Betweenness
 {
 private:
 	WeightedDirectedGraph *graph;
+	int *GetRangesOfWork(int count, int n);
 public:
 	Betweenness(WeightedDirectedGraph &graph);
 	//Serial version of betweenness
