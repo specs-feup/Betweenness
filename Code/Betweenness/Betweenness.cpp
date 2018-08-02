@@ -184,7 +184,7 @@ BetweennessResult Betweenness::CalculateOpenMP(int startVertex, int endVertex, i
 		if (start < end)
 		{
 			//for low number of vertices if start is higher than max vertex id then this method will not modify betweenness
-			BetweennessResult result = Calculate(startVertex + start, startVertex + end);
+			BetweennessResult result = Calculate(start, end);
 			double *subBetweenness = result.VertexBetweenness;
 			double *subEdgeBetweenness = result.EdgeBetweenness;
 
