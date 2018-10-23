@@ -4,8 +4,8 @@
 ml intel/2017.00
 
 # PBS Job parameters
-QUEUE=qexp
-PROJECT=DD-13-5
+QUEUE="R8466647"
+PROJECT="DD-18-35"
 
 NODES=1
 
@@ -40,8 +40,8 @@ then
   INPUT_GRAPH=$(readlink -f $INPUT_GRAPH)
   echo "File $INPUT_GRAPH is used as input."
   
-  SUBMITTED_JOB_ID=$(qsub -q qexp -A $PROJECT -N BTW_TEST \
-    -l select=$NODES:ncpus=24:mpiprocs=24:ompthreads=1,walltime=01:00:00 \
+  SUBMITTED_JOB_ID=$(qsub -q $QUEUE -A $PROJECT -N BTW_TEST \
+    -l select=$NODES:ncpus=24:mpiprocs=24:ompthreads=1,walltime=00:10:00 \
     -v INPUT_GRAPH=$INPUT_GRAPH,ROOT_DIR=$ROOT_DIR $0)
 
   echo "PBS Job ID: $SUBMITTED_JOB_ID"
@@ -59,7 +59,7 @@ then
 
   if [ ! -f "$BTW_BINARY" ]
   then
-    echo "Betwenneness binary not found. Run compile.sh."
+    echo "Betwenneness binary not found. Run prepare.sh."
     exit 1
   fi
   
